@@ -1,0 +1,13 @@
+<div class="jumbotron jumbotron-fluid">
+  <div class="container">
+    <h1 class="display-4">Results!</h1>
+    <ol>
+    <!-- For loop logic of jinja templates -->
+    {%for i in range(0, len)%}
+
+    <li>{{nh[i]['name']}}</li>
+    {%endfor%}
+
+    </ol>
+  </div>
+</div>
