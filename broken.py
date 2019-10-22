@@ -65,6 +65,19 @@ def is_valid_state(state):
     return True
 
 
+@app.route('/visualize')
+def my_runs():
+    runs = []
+    with open("runs.csv", "r") as runs_file:
+        reader = csv.DictReader(runs_file)
+
+        for row in reader:
+            runs.append(row["polyline"])
+            print('runs', runs)
+
+    return render_template("leaflet.html", runs = json.dumps(runs))
+
+
 @app.route('/reddit_callback')
 def reddit_callback():
     error = request.args.get('error', '')
