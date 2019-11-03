@@ -1,0 +1,23 @@
+html, body, #container {
+  height: 100%;
+  overflow: hidden;
+  width: 100%;
+}
+body {
+  /* height of .navbar, customize with @navbar-height variable */
+  padding-top: 50px;
+}
+.navbar {
+  min-height: 50px;
+}
+
+#map {
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  height: 100%;
+  width: auto;
+}
+
+@media (max-width: 767px) {
+
+}
+}

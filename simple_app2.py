@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from flask import Flask, abort, request, render_template
+from flask import Flask, abort, request, render_template, redirect
 from uuid import uuid4
 import requests
 import requests.auth
@@ -8,12 +8,14 @@ import csv
 import polyline
 import os
 import math
+import json
 
 CLIENT_ID = 28599  # Fill this in with your client ID
 CLIENT_SECRET = '0b89acaaafd09735ed93707d135ebf3519bfbfd7' # Fill this in with your client secret
 REDIRECT_URI = "http://localhost:65010/reddit_callback"
 MTS = {"washington": [44.2706, -71.3033], "adams": [44.3203, -71.2909], "jefferson": [44.3045, -71.3176], "monroe": [44.2556, -71.3220]}
 basedir = os.path.abspath(os.path.dirname(__file__))
+
 
 def user_agent():
     '''reddit API clients should each have their own, unique user-agent
@@ -37,9 +39,11 @@ app = Flask(__name__)
 
 @app.route('/')
 def homepage():
-    text = '<a href="%s">Authenticate with strava</a>'
-    return text % make_authorization_url()
-
+    #text = '<a href="%s">Authenticate with strava</a>'
+    #return text % make_authorization_url()
+    x=make_authorization_url()
+    print('x!!', x)
+    return render_template('home.html', myurl=x)
 
 def make_authorization_url():
     # Generate a random string for the state parameter
@@ -52,6 +56,7 @@ def make_authorization_url():
               "approval_prompt": "auto",
               "scope": "activity:read_all"}
     url = "https://www.strava.com/oauth/authorize?" + urllib.parse.urlencode(params)
+
     return url
 
 
@@ -78,7 +83,7 @@ def my_runs():
 
 
 @app.route('/reddit_callback')
-def reddit_callback():
+def index():
     error = request.args.get('error', '')
     if error:
         return "Error: " + error
@@ -127,7 +132,7 @@ def get_username(access_token):
         response = requests.get("https://www.strava.com/api/v3/activities", headers=headers, params={'page': page})
         me_json = response.json()
         #if len(me_json) == 0:
-        if page == 30:
+        if page == 5:
             break
         else:
             page += 1
