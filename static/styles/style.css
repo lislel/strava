@@ -1,0 +1,14 @@
+body {
+  margin: 0;
+  height: calc(100% - 51px);
+}
+
+html, #map {
+  height: 100%;
+}
+
+header.navbar {
+  margin-bottom: 0px;
+}
+
+}

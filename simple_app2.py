@@ -14,6 +14,7 @@ CLIENT_ID = 28599  # Fill this in with your client ID
 CLIENT_SECRET = '0b89acaaafd09735ed93707d135ebf3519bfbfd7' # Fill this in with your client secret
 REDIRECT_URI = "http://localhost:65010/reddit_callback"
 MTS = {"washington": [44.2706, -71.3033], "adams": [44.3203, -71.2909], "jefferson": [44.3045, -71.3176], "monroe": [44.2556, -71.3220]}
+mts_dict = {'washington': [], 'adams': [], 'monroe': [], 'jefferson': []}
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 
@@ -98,8 +99,9 @@ def index():
     # Note: In most cases, you'll want to store the access token, in, say,
     # a session for use in other parts of your web app.
     # return get_username(access_token)
-    nh = get_username(access_token)
-    return render_template('index.html', len = len(nh), nh = nh)
+    fin, unfin = get_username(access_token)
+    return render_template('index.html', dkeys = fin.keys(), nh = fin, unfin = unfin)
+    #return render_template('index.html', len = len(nh), nh = nh)
 
 
 
@@ -132,7 +134,7 @@ def get_username(access_token):
         response = requests.get("https://www.strava.com/api/v3/activities", headers=headers, params={'page': page})
         me_json = response.json()
         #if len(me_json) == 0:
-        if page == 5:
+        if page == 10:
             break
         else:
             page += 1
@@ -164,14 +166,26 @@ def get_username(access_token):
                                 if min_dist <= 0.000833:
                                     # print(key, item)
                                     mts_bagged.append(key)
+                                    mts_dict[key].append([item['name'], mts_bagged, item['id']])
+                                    print('mts_dict =', mts_dict)
                                     with open("runs.csv", "a") as runs_file:
                                         writer = csv.writer(runs_file, delimiter=",")
                                         writer.writerow([item["id"], item['map']['summary_polyline']])
                             if len(mts_bagged) > 0:
-                                nh.append([item['name'], mts_bagged])
+                                nh.append([item['name'], mts_bagged, item['id']])
+
     #return json.dumps(nh)
-    print(nh)
-    return nh
+    #print(nh)
+    #return nh
+    #print(mts_dict)
+    finished = {}
+    unfin = []
+    for key in mts_dict:
+        if len(mts_dict[key]) == 0:
+            unfin.append(key)
+        else:
+            finished[key] = mts_dict[key]
+    return finished, unfin
 
 
 if __name__ == '__main__':

@@ -1,16 +1,33 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="jumbotron jumbotron-fluid">
-  <div class="container">
-    <h1 class="display-4">Results!</h1>
-    <ol>
+  <div class="container-fluid">
+      <div class="row">
+      <div class="col-lg-6">
+    <h2>Mountains Climbed!</h2>
+      <ol>
     <!-- For loop logic of jinja templates -->
-    {%for i in range(0, len)%}
-
-    <li>{{nh[i]}}</li>
-    {%endfor%}
-
-    </ol>
+    {%for key in dkeys%}
+        <li><a href="#">{{key}}</a></li>
+        <ul>
+        {%for mt in nh[key]%}
+            <li><a href="{{ 'https://www.strava.com/activities/%s'%nh[key][loop.index0][2]}}"  target="_blank">{{nh[key][loop.index0][0]}}</a></li>
+            {%endfor%}
+            </ul>
+      {%endfor%}
+      </ol>
+      </div>
+    <div class="col-lg-6">
+      <h2>Mountains to go!</h2>
+     <ol>
+         {%for item in unfin%}
+         <li>{{item}}</li>
+         {%endfor%}
+     </ol>
+    </div>
   </div>
-</div>
+  </div>
+  </div>
 {% endblock %}
+
+
