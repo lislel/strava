@@ -78,9 +78,14 @@ def my_runs():
 
         for row in reader:
             runs.append(row["polyline"])
-            print('runs', runs)
 
-    return render_template("leaflet.html", runs = json.dumps(runs))
+    with open('marks.csv', 'r') as marks_file:
+        marks = []
+        reader = csv.DictReader(marks_file)
+        for row in reader:
+            marks.append([row['lat'], row['lon']])
+
+    return render_template("leaflet.html", runs = json.dumps(runs), map_markers = json.dumps(marks))
 
 
 @app.route('/reddit_callback')
@@ -122,6 +127,7 @@ def get_token(code):
 
 
 def get_username(access_token):
+    markers = {}
     headers = base_headers()
     headers.update({'Authorization': 'Bearer ' + access_token})
     page = 1
@@ -167,7 +173,7 @@ def get_username(access_token):
                                     # print(key, item)
                                     mts_bagged.append(key)
                                     mts_dict[key].append([item['name'], mts_bagged, item['id']])
-                                    print('mts_dict =', mts_dict)
+                                    markers[key] = [MTS[key], item['id']]
                                     with open("runs.csv", "a") as runs_file:
                                         writer = csv.writer(runs_file, delimiter=",")
                                         writer.writerow([item["id"], item['map']['summary_polyline']])
@@ -185,6 +191,10 @@ def get_username(access_token):
             unfin.append(key)
         else:
             finished[key] = mts_dict[key]
+            with open ('marks.csv', 'a') as file:
+                writer = csv.writer(file)
+                print(markers[key][0][0], markers[key][0][1], markers[key][1])
+                writer.writerow('%s,%s,%s' % (markers[key][0][0], markers[key][0][1], markers[key][1]))
     return finished, unfin
 
 

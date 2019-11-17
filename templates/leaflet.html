@@ -28,10 +28,15 @@
         'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 18,
         }).addTo(map);
+
     var encodedRoutes = {{ runs|safe }}
+    var markers = {{ map_markers|safe }}
+    console.log('test')
+    console.log(markers)
     for (let encoded of encodedRoutes) {
       var coordinates = L.Polyline.fromEncoded(encoded).getLatLngs();
       L.polyline(
+
           coordinates,
           {
               color: 'blue',
@@ -41,8 +46,13 @@
           }
       ).addTo(map);
     }
-    var marker = L.marker([44.2706, -71.3033]).addTo(map);
-    marker.bindPopup("<b>Hello world!</b><br>I am a popup.").openPopup();
+
+    for (let m of markers) {
+        L.marker([m[0], m[1]]).addTo(map).bindPopup('test').openPopup();
+
+    }
+
+
     </script>
   </body>
 </html>
