@@ -169,21 +169,24 @@ def get_username(access_token):
                                     # print(lat, lon, pt, hypot)
                                     if hypot < min_dist:
                                         min_dist = hypot
+                                print('min_dist', min_dist, key, item)
                                 if min_dist <= 0.000833:
-                                    # print(key, item)
                                     mts_bagged.append(key)
                                     mts_dict[key].append([item['name'], mts_bagged, item['id']])
                                     markers[key] = [MTS[key], item['id']]
                                     with open("runs.csv", "a") as runs_file:
                                         writer = csv.writer(runs_file, delimiter=",")
                                         writer.writerow([item["id"], item['map']['summary_polyline']])
+
                             if len(mts_bagged) > 0:
                                 nh.append([item['name'], mts_bagged, item['id']])
 
-    #return json.dumps(nh)
-    #print(nh)
-    #return nh
-    #print(mts_dict)
+    print('marker keys', markers.keys())
+    for key in MTS.keys():
+        if key not in markers.keys():
+            print('true!!')
+            markers[key] = [MTS[key], 'missing']
+    print('after', markers)
     finished = {}
     unfin = []
     for key in mts_dict:
@@ -191,10 +194,10 @@ def get_username(access_token):
             unfin.append(key)
         else:
             finished[key] = mts_dict[key]
-            with open ('marks.csv', 'a') as file:
-                writer = csv.writer(file)
-                print(markers[key][0][0], markers[key][0][1], markers[key][1])
-                writer.writerow([markers[key][0][0], markers[key][0][1], markers[key][1]])
+        with open ('marks.csv', 'a') as file:
+            writer = csv.writer(file)
+            print(markers[key][0][0], markers[key][0][1], markers[key][1])
+            writer.writerow([markers[key][0][0], markers[key][0][1], markers[key][1]])
     return finished, unfin
 
 

@@ -49,10 +49,16 @@
     }
 
     for (let m of markers) {
+        if (m[2] != 'missing') {
         var link = L.DomUtil.create('a');
         link.href = 'https://www.strava.com/activities/' + m[2];
         link.textContent = 'https://www.strava.com/' + m[2];
+        link.target="_blank";
         L.marker([m[0], m[1]]).addTo(map).bindPopup(link);
+        }
+        else {
+        L.marker([m[0], m[1]]).addTo(map).bindPopup("Not climbed yet!");
+        }
     }
 
 
