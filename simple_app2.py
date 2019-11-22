@@ -83,7 +83,7 @@ def my_runs():
         marks = []
         reader = csv.DictReader(marks_file)
         for row in reader:
-            marks.append([row['lat'], row['lon']])
+            marks.append([row['lat'], row['lon'], row['id']])
 
     return render_template("leaflet.html", runs = json.dumps(runs), map_markers = json.dumps(marks))
 
@@ -194,7 +194,7 @@ def get_username(access_token):
             with open ('marks.csv', 'a') as file:
                 writer = csv.writer(file)
                 print(markers[key][0][0], markers[key][0][1], markers[key][1])
-                writer.writerow('%s,%s,%s' % (markers[key][0][0], markers[key][0][1], markers[key][1]))
+                writer.writerow([markers[key][0][0], markers[key][0][1], markers[key][1]])
     return finished, unfin
 
 
