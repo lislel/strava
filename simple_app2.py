@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from flask import Flask, abort, request, render_template, redirect
+from flask import Flask, abort, request, render_template, redirect, session
 from uuid import uuid4
 import requests
 import requests.auth
@@ -9,11 +9,12 @@ import polyline
 import os
 import math
 import json
+import pandas
 
 CLIENT_ID = 28599  # Fill this in with your client ID
 CLIENT_SECRET = '0b89acaaafd09735ed93707d135ebf3519bfbfd7' # Fill this in with your client secret
 REDIRECT_URI = "http://localhost:65010/reddit_callback"
-MTS = {"washington": [44.2706, -71.3033], "adams": [44.3203, -71.2909], "jefferson": [44.3045, -71.3176], "monroe": [44.2556, -71.3220]}
+MTS = {"washington": [44.2706, -71.3033, []], "adams": [44.3203, -71.2909, []], "jefferson": [44.3045, -71.3176, []], "monroe": [44.2556, -71.3220, []]}
 mts_dict = {'washington': [], 'adams': [], 'monroe': [], 'jefferson': []}
 basedir = os.path.abspath(os.path.dirname(__file__))
 
@@ -36,7 +37,7 @@ def base_headers():
 
 
 app = Flask(__name__)
-
+app.secret_key = 'blah'
 
 @app.route('/')
 def homepage():
@@ -79,13 +80,13 @@ def my_runs():
         for row in reader:
             runs.append(row["polyline"])
 
-    with open('marks.csv', 'r') as marks_file:
-        marks = []
-        reader = csv.DictReader(marks_file)
-        for row in reader:
-            marks.append([row['lat'], row['lon'], row['id']])
+    m2 = session.get('marks', None)
+    m3 = []
+    for key in m2.keys():
+        m3.append(m2[key])
 
-    return render_template("leaflet.html", runs = json.dumps(runs), map_markers = json.dumps(marks))
+    print('m3 =', m3)
+    return render_template("leaflet.html", runs = json.dumps(runs), map_markers = m3)
 
 
 @app.route('/reddit_callback')
@@ -127,6 +128,7 @@ def get_token(code):
 
 
 def get_username(access_token):
+    return_marks = []
     markers = {}
     headers = base_headers()
     headers.update({'Authorization': 'Bearer ' + access_token})
@@ -173,6 +175,7 @@ def get_username(access_token):
                                 if min_dist <= 0.000833:
                                     mts_bagged.append(key)
                                     mts_dict[key].append([item['name'], mts_bagged, item['id']])
+                                    MTS[key][2].append(item['id'])
                                     markers[key] = [MTS[key], item['id']]
                                     with open("runs.csv", "a") as runs_file:
                                         writer = csv.writer(runs_file, delimiter=",")
@@ -181,12 +184,14 @@ def get_username(access_token):
                             if len(mts_bagged) > 0:
                                 nh.append([item['name'], mts_bagged, item['id']])
 
-    print('marker keys', markers.keys())
+
     for key in MTS.keys():
         if key not in markers.keys():
             print('true!!')
             markers[key] = [MTS[key], 'missing']
-    print('after', markers)
+        if len(MTS[key][2]) == 0:
+            MTS[key][2] = 'missing'
+    print('after', MTS)
     finished = {}
     unfin = []
     for key in mts_dict:
@@ -194,12 +199,16 @@ def get_username(access_token):
             unfin.append(key)
         else:
             finished[key] = mts_dict[key]
-        with open ('marks.csv', 'a') as file:
-            writer = csv.writer(file)
-            print(markers[key][0][0], markers[key][0][1], markers[key][1])
-            writer.writerow([markers[key][0][0], markers[key][0][1], markers[key][1]])
+        return_marks.append([markers[key][0][0], markers[key][0][1], markers[key][1]])
+
+    session['marks'] = MTS
+    print('return marks =', return_marks)
     return finished, unfin
 
 
 if __name__ == '__main__':
     app.run(debug=True, port=65010)
+    session.init_app(app)
+
+app.secret_key = 'super secret key'
+app.config['SESSION_TYPE'] = 'filesystem'

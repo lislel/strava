@@ -61,11 +61,19 @@
 
     for (let m of markers) {
         if (m[2] != 'missing') {
-        var link = L.DomUtil.create('a');
-        link.href = 'https://www.strava.com/activities/' + m[2];
-        link.textContent = 'https://www.strava.com/' + m[2];
-        link.target="_blank";
-        L.marker([m[0], m[1]]).addTo(map).bindPopup(link);
+
+        var mydiv = document.createElement("myDiv");
+
+        for (var number of m[2]) {
+        var aTag = document.createElement('a');
+        aTag.setAttribute('href',"https://strava.com/activities/" + number);
+        aTag.setAttribute('target', "_blank");
+        aTag.innerText = number;
+        mydiv.appendChild(aTag);
+        }
+
+
+        L.marker([m[0], m[1]]).addTo(map).bindPopup(mydiv);
         }
         else {
 
