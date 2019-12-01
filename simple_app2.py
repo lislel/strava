@@ -142,7 +142,7 @@ def get_username(access_token):
         response = requests.get("https://www.strava.com/api/v3/activities", headers=headers, params={'page': page})
         me_json = response.json()
         #if len(me_json) == 0:
-        if page == 10:
+        if page == 40:
             break
         else:
             page += 1
