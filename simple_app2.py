@@ -40,12 +40,11 @@ app = Flask(__name__)
 app.secret_key = 'blah'
 
 @app.route('/')
-def homepage():
+def authorize():
     #text = '<a href="%s">Authenticate with strava</a>'
     #return text % make_authorization_url()
     x=make_authorization_url()
-    print('x!!', x)
-    return render_template('home.html', myurl=x)
+    return render_template('authorize.html', myurl=x)
 
 def make_authorization_url():
     # Generate a random string for the state parameter
@@ -70,6 +69,17 @@ def save_created_state(state):
 
 def is_valid_state(state):
     return True
+
+@app.route('/results')
+def results():
+    fin = session.get('fin')
+    unfin = session.get('unfin')
+    return render_template('index.html', dkeys = fin.keys(), nh = fin, unfin = unfin)
+
+
+@app.route('/home')
+def home2():
+    return render_template('home2.html')
 
 @app.route('/visualize')
 def my_runs():
@@ -106,8 +116,11 @@ def index():
     # a session for use in other parts of your web app.
     # return get_username(access_token)
     fin, unfin = get_username(access_token)
-    return render_template('index.html', dkeys = fin.keys(), nh = fin, unfin = unfin)
-    #return render_template('index.html', len = len(nh), nh = nh)
+    session['fin'] = fin
+    session['unfin'] = unfin
+    #return render_template('index.html', dkeys = fin.keys(), nh = fin, unfin = unfin)
+    return render_template('home2.html')
+
 
 
 
@@ -126,6 +139,11 @@ def get_token(code):
     print('token json', token_json)
     return token_json["access_token"]
 
+def get_hypot(pt, lat, lon):
+    x_ind = pt[0] - lat
+    y_ind = pt[1] - lon
+    hypot = math.sqrt(math.pow(x_ind, 2) + math.pow(y_ind, 2))
+    return hypot
 
 def get_username(access_token):
     return_marks = []
@@ -153,25 +171,16 @@ def get_username(access_token):
                     if item['type'] != 'Bike' and item['start_latlng'][0] >= 43.82 and item['start_latlng'][0] <= 44.62 and item['start_latlng'][1] >= -71.97 and item['start_latlng'][1] <= -71.012:
                         if item['elev_high'] > 1219:
                             line = item['map']['summary_polyline']
-                            # print(line)
                             points = polyline.decode(line)
                             mts_bagged = []
                             for key in MTS.keys():
-                                # print('item', item['name'], key)
                                 lat = MTS[key][0]
                                 lon = MTS[key][1]
-                                # print('lat =', lat)
-                                # print('lon=', lon)
                                 min_dist = 10000000
                                 for pt in points:
-                                    x_ind = pt[0] - lat
-                                    y_ind = pt[1] - lon
-                                    hypot = math.sqrt(math.pow(x_ind, 2) + math.pow(y_ind, 2))
-                                    # print('item, key, hypot', item, key, hypot)
-                                    # print(lat, lon, pt, hypot)
+                                    hypot = get_hypot(pt, lat, lon)
                                     if hypot < min_dist:
                                         min_dist = hypot
-                                print('min_dist', min_dist, key, item)
                                 if min_dist <= 0.000833:
                                     mts_bagged.append(key)
                                     mts_dict[key].append([item['name'], mts_bagged, item['id']])
@@ -191,7 +200,7 @@ def get_username(access_token):
             markers[key] = [MTS[key], 'missing']
         if len(MTS[key][2]) == 0:
             MTS[key][2] = 'missing'
-    print('after', MTS)
+
     finished = {}
     unfin = []
     for key in mts_dict:
@@ -202,7 +211,6 @@ def get_username(access_token):
         return_marks.append([markers[key][0][0], markers[key][0][1], markers[key][1]])
 
     session['marks'] = MTS
-    print('return marks =', return_marks)
     return finished, unfin
 
 
