@@ -14,8 +14,8 @@ import pandas
 CLIENT_ID = 28599  # Fill this in with your client ID
 CLIENT_SECRET = '0b89acaaafd09735ed93707d135ebf3519bfbfd7' # Fill this in with your client secret
 REDIRECT_URI = "http://localhost:65010/reddit_callback"
-MTS = {"washington": [44.2706, -71.3033, []], "adams": [44.3203, -71.2909, []], "jefferson": [44.3045, -71.3176, []], "monroe": [44.2556, -71.3220, []]}
-mts_dict = {'washington': [], 'adams': [], 'monroe': [], 'jefferson': []}
+MTS = {"washington": [44.2706, -71.3033, []], "adams": [44.3203, -71.2909, []], "jefferson": [44.3045, -71.3176, []], "monroe": [44.2556, -71.3220, []], 'Madison':[44.32833333,-71.27833333, []],'Lafayette': [44.16055556,-71.64416667, []], 'Lincoln': [44.15972222,-71.65166667, []], 'South Twin': [44.19027778,-71.55888889, []], 'Carter Dome':[43.26694444,-71.17888889,[]]}
+mts_dict = {'washington': [], 'adams': [], 'monroe': [], 'jefferson': [], 'Madison':[], 'Lafayette':[], 'South Twin': [], 'Lincoln':[], 'Carter Dome':[]}
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 
@@ -157,15 +157,15 @@ def get_username(access_token):
         writer.writerow(["id", "polyline"])
 
     while True:
-        response = requests.get("https://www.strava.com/api/v3/activities", headers=headers, params={'page': page})
-        me_json = response.json()
-        #if len(me_json) == 0:
+        json_response = requests.get("https://www.strava.com/api/v3/activities", headers=headers, params={'page': page, 'per_page': 200})
+        response = json_response.json()
+        print(response)
         if page == 40:
             break
         else:
             page += 1
             i = 0
-            for item in me_json:
+            for item in response:
                 i += 1
                 if item['start_latlng'] is not None:
                     if item['type'] != 'Bike' and item['start_latlng'][0] >= 43.82 and item['start_latlng'][0] <= 44.62 and item['start_latlng'][1] >= -71.97 and item['start_latlng'][1] <= -71.012:
