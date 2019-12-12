@@ -11,7 +11,7 @@
         <li><a href="#">{{key}}</a></li>
         <ul>
         {%for mt in nh[key]%}
-            <li><a href="{{ 'https://www.strava.com/activities/%s'%nh[key][loop.index0][2]}}"  target="_blank">{{nh[key][loop.index0][0]}}</a></li>
+            <li><a href="{{ 'https://www.strava.com/activities/%s'%nh[key][loop.index0][1]}}"  target="_blank">{{nh[key][loop.index0][0]}}</a></li>
             {%endfor%}
             </ul>
       {%endfor%}

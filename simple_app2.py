@@ -118,14 +118,10 @@ def index():
     fin, unfin = get_username(access_token)
     session['fin'] = fin
     session['unfin'] = unfin
-    #return render_template('index.html', dkeys = fin.keys(), nh = fin, unfin = unfin)
     return render_template('home2.html')
 
 
-
-
 def get_token(code):
-    #client_auth = requests.auth.HTTPBasicAuth(CLIENT_ID, CLIENT_SECRET)
     post_data = {"grant_type": "authorization_code",
                  "client_id": CLIENT_ID,
                  "client_secret": CLIENT_SECRET,
@@ -146,12 +142,9 @@ def get_hypot(pt, lat, lon):
     return hypot
 
 def get_username(access_token):
-    return_marks = []
-    markers = {}
     headers = base_headers()
     headers.update({'Authorization': 'Bearer ' + access_token})
     page = 1
-    nh = []
     with open("runs.csv", "w") as runs_file:
         writer = csv.writer(runs_file, delimiter=",")
         writer.writerow(["id", "polyline"])
@@ -174,41 +167,29 @@ def get_username(access_token):
                             points = polyline.decode(line)
                             mts_bagged = []
                             for key in MTS.keys():
-                                lat = MTS[key][0]
-                                lon = MTS[key][1]
                                 min_dist = 10000000
                                 for pt in points:
-                                    hypot = get_hypot(pt, lat, lon)
+                                    hypot = get_hypot(pt, MTS[key][0], MTS[key][1])
                                     if hypot < min_dist:
                                         min_dist = hypot
                                 if min_dist <= 0.000833:
-                                    mts_bagged.append(key)
-                                    mts_dict[key].append([item['name'], mts_bagged, item['id']])
+                                    #add id to list of activities that have touched this mountain
                                     MTS[key][2].append(item['id'])
-                                    markers[key] = [MTS[key], item['id']]
+                                    # map the peaks summited on this activity to the activity
+                                    mts_dict[key].append([item['name'], item['id']])
                                     with open("runs.csv", "a") as runs_file:
                                         writer = csv.writer(runs_file, delimiter=",")
                                         writer.writerow([item["id"], item['map']['summary_polyline']])
 
-                            if len(mts_bagged) > 0:
-                                nh.append([item['name'], mts_bagged, item['id']])
-
-
+    unfin = []
+    finished = {}
     for key in MTS.keys():
-        if key not in markers.keys():
-            print('true!!')
-            markers[key] = [MTS[key], 'missing']
         if len(MTS[key][2]) == 0:
             MTS[key][2] = 'missing'
-
-    finished = {}
-    unfin = []
-    for key in mts_dict:
-        if len(mts_dict[key]) == 0:
             unfin.append(key)
         else:
             finished[key] = mts_dict[key]
-        return_marks.append([markers[key][0][0], markers[key][0][1], markers[key][1]])
+
 
     session['marks'] = MTS
     return finished, unfin
