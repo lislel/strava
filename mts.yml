@@ -1,0 +1,20 @@
+washington:
+  lat: 44.2706
+  lon: -71.3033
+  act_name: []
+  act_id: []
+adams:
+  lat: 44.3202
+  lon: -71.2909
+  act_name: []
+  act_id: []
+jefferson:
+  lat: 44.3045
+  lon: -71.3176
+  act_name: []
+  act_id: []
+test_miss:
+  lat: 47.3045
+  lon: -71.3176
+  act_name: []
+  act_id: []

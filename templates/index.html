@@ -10,8 +10,8 @@
     {%for key in dkeys%}
         <li><a href="#">{{key}}</a></li>
         <ul>
-        {%for mt in nh[key]%}
-            <li><a href="{{ 'https://www.strava.com/activities/%s'%nh[key][loop.index0][1]}}"  target="_blank">{{nh[key][loop.index0][0]}}</a></li>
+        {%for mt in nh[key]['act_id']%}
+            <li><a href="{{ 'https://www.strava.com/activities/%s'%nh[key]['act_id'][loop.index0]}}"  target="_blank">{{nh[key]['act_name'][loop.index0]}}</a></li>
             {%endfor%}
             </ul>
       {%endfor%}

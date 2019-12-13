@@ -60,11 +60,11 @@
     }
 
     for (let m of markers) {
-        if (m[2] != 'missing') {
+        if (m['act_name'] != 'missing') {
 
         var mydiv = document.createElement("myDiv");
 
-        for (var number of m[2]) {
+        for (var number of m['act_id']) {
         var aTag = document.createElement('a');
         aTag.setAttribute('href',"https://strava.com/activities/" + number);
         aTag.setAttribute('target', "_blank");
@@ -73,7 +73,7 @@
         }
 
 
-        L.marker([m[0], m[1]]).addTo(map).bindPopup(mydiv);
+        L.marker([m['lat'], m['lon']]).addTo(map).bindPopup(mydiv);
         }
         else {
 
@@ -81,7 +81,7 @@
             markerColor: 'red'
             });
 
-        L.marker([m[0], m[1]], {icon: redMarker}).addTo(map).bindPopup("Not climbed yet!");
+        L.marker([m['lat'], m['lon']], {icon: redMarker}).addTo(map).bindPopup("Not climbed yet!");
         }
     }
 

@@ -9,13 +9,20 @@ import polyline
 import os
 import math
 import json
-import pandas
+import yaml
 
 CLIENT_ID = 28599  # Fill this in with your client ID
 CLIENT_SECRET = '0b89acaaafd09735ed93707d135ebf3519bfbfd7' # Fill this in with your client secret
 REDIRECT_URI = "http://localhost:65010/reddit_callback"
-MTS = {"washington": [44.2706, -71.3033, []], "adams": [44.3203, -71.2909, []], "jefferson": [44.3045, -71.3176, []], "monroe": [44.2556, -71.3220, []], 'Madison':[44.32833333,-71.27833333, []],'Lafayette': [44.16055556,-71.64416667, []], 'Lincoln': [44.15972222,-71.65166667, []], 'South Twin': [44.19027778,-71.55888889, []], 'Carter Dome':[43.26694444,-71.17888889,[]]}
-mts_dict = {'washington': [], 'adams': [], 'monroe': [], 'jefferson': [], 'Madison':[], 'Lafayette':[], 'South Twin': [], 'Lincoln':[], 'Carter Dome':[]}
+#MTS = {"washington": [44.2706, -71.3033, []], "adams": [44.3203, -71.2909, []], "jefferson": [44.3045, -71.3176, []], "monroe": [44.2556, -71.3220, []], 'Madison':[44.32833333,-71.27833333, []],'Lafayette': [44.16055556,-71.64416667, []], 'Lincoln': [44.15972222,-71.65166667, []], 'South Twin': [44.19027778,-71.55888889, []], 'Carter Dome':[43.26694444,-71.17888889,[]]}
+#mts_dict = {'washington': [], 'adams': [], 'monroe': [], 'jefferson': [], 'Madison':[], 'Lafayette':[], 'South Twin': [], 'Lincoln':[], 'Carter Dome':[]}
+
+file = '/home/lauren/Documents/strava/mts.yml'
+
+with open(file) as f:
+    MTS = yaml.load(f)
+    print(MTS)
+
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 
@@ -169,14 +176,14 @@ def get_username(access_token):
                             for key in MTS.keys():
                                 min_dist = 10000000
                                 for pt in points:
-                                    hypot = get_hypot(pt, MTS[key][0], MTS[key][1])
+                                    hypot = get_hypot(pt, MTS[key]['lat'], MTS[key]['lon'])
                                     if hypot < min_dist:
                                         min_dist = hypot
                                 if min_dist <= 0.000833:
                                     #add id to list of activities that have touched this mountain
-                                    MTS[key][2].append(item['id'])
+                                    MTS[key]['act_id'].append(item['id'])
                                     # map the peaks summited on this activity to the activity
-                                    mts_dict[key].append([item['name'], item['id']])
+                                    MTS[key]['act_name'].append(item['name'])
                                     with open("runs.csv", "a") as runs_file:
                                         writer = csv.writer(runs_file, delimiter=",")
                                         writer.writerow([item["id"], item['map']['summary_polyline']])
@@ -184,12 +191,11 @@ def get_username(access_token):
     unfin = []
     finished = {}
     for key in MTS.keys():
-        if len(MTS[key][2]) == 0:
-            MTS[key][2] = 'missing'
+        if len(MTS[key]['act_name']) == 0:
+            MTS[key]['act_name'] = 'missing'
             unfin.append(key)
         else:
-            finished[key] = mts_dict[key]
-
+            finished[key] = MTS[key]
 
     session['marks'] = MTS
     return finished, unfin
@@ -201,3 +207,4 @@ if __name__ == '__main__':
 
 app.secret_key = 'super secret key'
 app.config['SESSION_TYPE'] = 'filesystem'
+
