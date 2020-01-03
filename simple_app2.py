@@ -10,6 +10,7 @@ import os
 import math
 import json
 import yaml
+import time
 
 CLIENT_ID = 28599  # Fill this in with your client ID
 CLIENT_SECRET = '0b89acaaafd09735ed93707d135ebf3519bfbfd7' # Fill this in with your client secret
@@ -102,7 +103,6 @@ def my_runs():
     for key in m2.keys():
         m3.append(m2[key])
 
-    print('m3 =', m3)
     return render_template("leaflet.html", runs = json.dumps(runs), map_markers = m3)
 
 
@@ -149,6 +149,7 @@ def get_hypot(pt, lat, lon):
     return hypot
 
 def get_username(access_token):
+    start = time.time()
     headers = base_headers()
     headers.update({'Authorization': 'Bearer ' + access_token})
     page = 1
@@ -159,7 +160,6 @@ def get_username(access_token):
     while True:
         json_response = requests.get("https://www.strava.com/api/v3/activities", headers=headers, params={'page': page, 'per_page': 200})
         response = json_response.json()
-        print(response)
         if page == 40:
             break
         else:
@@ -172,7 +172,6 @@ def get_username(access_token):
                         if item['elev_high'] > 1219:
                             line = item['map']['summary_polyline']
                             points = polyline.decode(line)
-                            mts_bagged = []
                             for key in MTS.keys():
                                 min_dist = 10000000
                                 for pt in points:
@@ -198,10 +197,14 @@ def get_username(access_token):
             finished[key] = MTS[key]
 
     session['marks'] = MTS
+    end_time = time.time()
+    delta = end_time - start
+    print('delta time', delta)
     return finished, unfin
 
 
 if __name__ == '__main__':
+
     app.run(debug=True, port=65010)
     session.init_app(app)
 
