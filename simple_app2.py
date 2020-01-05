@@ -19,6 +19,7 @@ REDIRECT_URI = "http://localhost:65010/reddit_callback"
 #mts_dict = {'washington': [], 'adams': [], 'monroe': [], 'jefferson': [], 'Madison':[], 'Lafayette':[], 'South Twin': [], 'Lincoln':[], 'Carter Dome':[]}
 
 file = '/home/lauren/Documents/strava/mts.yml'
+s = requests.Session()
 
 with open(file) as f:
     MTS = yaml.load(f)
@@ -80,9 +81,10 @@ def is_valid_state(state):
 
 @app.route('/results')
 def results():
-    fin = session.get('fin')
-    unfin = session.get('unfin')
-    return render_template('index.html', dkeys = fin.keys(), nh = fin, unfin = unfin)
+    pass
+    #fin = session.get('fin')
+    #unfin = session.get('unfin')
+    #return render_template('index.html', dkeys = fin.keys(), nh = fin, unfin = unfin)
 
 
 @app.route('/home')
@@ -122,9 +124,10 @@ def index():
     # Note: In most cases, you'll want to store the access token, in, say,
     # a session for use in other parts of your web app.
     # return get_username(access_token)
-    fin, unfin = get_username(access_token)
-    session['fin'] = fin
-    session['unfin'] = unfin
+    #fin, unfin = get_username(access_token)
+    get_username(access_token)
+    #session['fin'] = fin
+    #session['unfin'] = unfin
     return render_template('home2.html')
 
 
@@ -148,44 +151,57 @@ def get_hypot(pt, lat, lon):
     hypot = math.sqrt(math.pow(x_ind, 2) + math.pow(y_ind, 2))
     return hypot
 
+
+def get_jobs(headers):
+    url = "https://www.strava.com/api/v3/activities"
+    first_page = s.get(url, headers=headers).json()
+    print('first page =', first_page, type(first_page))
+    yield first_page
+    #num_pages = first_page['last_page']
+
+    for page in range(2, 7):
+        try:
+            next_page = s.get(url, headers=headers, params={'page': page, 'per_page': 200}).json()
+            yield next_page
+        except:
+            pass
+
 def get_username(access_token):
     start = time.time()
     headers = base_headers()
     headers.update({'Authorization': 'Bearer ' + access_token})
-    page = 1
+
     with open("runs.csv", "w") as runs_file:
         writer = csv.writer(runs_file, delimiter=",")
         writer.writerow(["id", "polyline"])
 
-    while True:
-        json_response = requests.get("https://www.strava.com/api/v3/activities", headers=headers, params={'page': page, 'per_page': 200})
-        response = json_response.json()
-        if page == 40:
-            break
-        else:
-            page += 1
-            i = 0
-            for item in response:
-                i += 1
-                if item['start_latlng'] is not None:
-                    if item['type'] != 'Bike' and item['start_latlng'][0] >= 43.82 and item['start_latlng'][0] <= 44.62 and item['start_latlng'][1] >= -71.97 and item['start_latlng'][1] <= -71.012:
-                        if item['elev_high'] > 1219:
-                            line = item['map']['summary_polyline']
-                            points = polyline.decode(line)
-                            for key in MTS.keys():
-                                min_dist = 10000000
-                                for pt in points:
-                                    hypot = get_hypot(pt, MTS[key]['lat'], MTS[key]['lon'])
-                                    if hypot < min_dist:
-                                        min_dist = hypot
-                                if min_dist <= 0.000833:
-                                    #add id to list of activities that have touched this mountain
-                                    MTS[key]['act_id'].append(item['id'])
-                                    # map the peaks summited on this activity to the activity
-                                    MTS[key]['act_name'].append(item['name'])
-                                    with open("runs.csv", "a") as runs_file:
-                                        writer = csv.writer(runs_file, delimiter=",")
-                                        writer.writerow([item["id"], item['map']['summary_polyline']])
+    for page in get_jobs(headers):
+        print('test', page, type(page))
+
+    end_time = time.time()
+    delta = end_time - start
+    print('delta =', delta)
+    '''
+        for item in response:
+            if item['start_latlng'] is not None:
+                if item['type'] != 'Bike' and item['start_latlng'][0] >= 43.82 and item['start_latlng'][0] <= 44.62 and item['start_latlng'][1] >= -71.97 and item['start_latlng'][1] <= -71.012:
+                    if item['elev_high'] > 1219:
+                        line = item['map']['summary_polyline']
+                        points = polyline.decode(line)
+                        for key in MTS.keys():
+                            min_dist = 10000000
+                            for pt in points:
+                                hypot = get_hypot(pt, MTS[key]['lat'], MTS[key]['lon'])
+                                if hypot < min_dist:
+                                    min_dist = hypot
+                            if min_dist <= 0.000833:
+                                #add id to list of activities that have touched this mountain
+                                MTS[key]['act_id'].append(item['id'])
+                                # map the peaks summited on this activity to the activity
+                                MTS[key]['act_name'].append(item['name'])
+                                with open("runs.csv", "a") as runs_file:
+                                    writer = csv.writer(runs_file, delimiter=",")
+                                    writer.writerow([item["id"], item['map']['summary_polyline']])
 
     unfin = []
     finished = {}
@@ -201,7 +217,7 @@ def get_username(access_token):
     delta = end_time - start
     print('delta time', delta)
     return finished, unfin
-
+    '''
 
 if __name__ == '__main__':
 
