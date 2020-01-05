@@ -124,10 +124,9 @@ def index():
     # Note: In most cases, you'll want to store the access token, in, say,
     # a session for use in other parts of your web app.
     # return get_username(access_token)
-    #fin, unfin = get_username(access_token)
-    get_username(access_token)
-    #session['fin'] = fin
-    #session['unfin'] = unfin
+    fin, unfin = get_username(access_token)
+    session['fin'] = fin
+    session['unfin'] = unfin
     return render_template('home2.html')
 
 
@@ -177,12 +176,7 @@ def get_username(access_token):
 
     for page in get_jobs(headers):
         print('test', page, type(page))
-
-    end_time = time.time()
-    delta = end_time - start
-    print('delta =', delta)
-    '''
-        for item in response:
+        for item in page:
             if item['start_latlng'] is not None:
                 if item['type'] != 'Bike' and item['start_latlng'][0] >= 43.82 and item['start_latlng'][0] <= 44.62 and item['start_latlng'][1] >= -71.97 and item['start_latlng'][1] <= -71.012:
                     if item['elev_high'] > 1219:
@@ -217,7 +211,6 @@ def get_username(access_token):
     delta = end_time - start
     print('delta time', delta)
     return finished, unfin
-    '''
 
 if __name__ == '__main__':
 
