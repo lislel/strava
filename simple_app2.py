@@ -126,7 +126,7 @@ def index():
     # Note: In most cases, you'll want to store the access token, in, say,
     # a session for use in other parts of your web app.
     # return get_username(access_token)
-    fin, unfin = get_username(access_token)
+    fin, unfin = get_username(access_token, MTS)
     session['fin'] = fin
     session['unfin'] = unfin
     return render_template('home2.html')
@@ -168,11 +168,45 @@ def get_jobs(headers):
         except:
             pass
 
+def get_athelete(headers, id):
+    url = "https://www.strava.com/api/v3/athletes/%s/stats" % id
+    first_page = s.get(url, headers=headers).json()
+    return first_page
 
-def get_username(access_token):
+def parse(page, MTS):
+    for item in page:
+        if item['start_latlng'] is not None:
+            if item['type'] != 'Bike' and item['start_latlng'][0] >= 43.82 and item['start_latlng'][0] <= 44.62 and \
+                    item['start_latlng'][1] >= -71.97 and item['start_latlng'][1] <= -71.012:
+                if item['elev_high'] > 1219:
+                    line = item['map']['summary_polyline']
+                    points = polyline.decode(line)
+                    for key in MTS.keys():
+                        min_dist = 10000000
+                        for pt in points:
+                            hypot = get_hypot(pt, MTS[key]['lat'], MTS[key]['lon'])
+                            if hypot < min_dist:
+                                min_dist = hypot
+                        if min_dist <= 0.000833:
+                            # add id to list of activities that have touched this mountain
+                            MTS[key]['act_id'].append(item['id'])
+                            # map the peaks summited on this activity to the activity
+                            MTS[key]['act_name'].append(item['name'])
+                            with open("runs.csv", "a") as runs_file:
+                                writer = csv.writer(runs_file, delimiter=",")
+                                writer.writerow([item["id"], item['map']['summary_polyline']])
+    return(MTS)
+
+
+def get_username(access_token, MTS):
     start = time.time()
     headers = base_headers()
     headers.update({'Authorization': 'Bearer ' + access_token})
+
+    # Get athlete stats
+    athlete = get_athelete(headers, '5962891')
+    act_total = int(athlete['all_run_totals']['count']) +  int(athlete['all_ride_totals']['count']) + int(athlete['all_swim_totals']['count'])
+    page_num = int(act_total/200)
 
     with open("runs.csv", "w") as runs_file:
         writer = csv.writer(runs_file, delimiter=",")
@@ -180,27 +214,7 @@ def get_username(access_token):
 
     for page in get_jobs(headers):
         print('test', page, type(page))
-        for item in page:
-            if item['start_latlng'] is not None:
-                if item['type'] != 'Bike' and item['start_latlng'][0] >= 43.82 and item['start_latlng'][0] <= 44.62 and \
-                        item['start_latlng'][1] >= -71.97 and item['start_latlng'][1] <= -71.012:
-                    if item['elev_high'] > 1219:
-                        line = item['map']['summary_polyline']
-                        points = polyline.decode(line)
-                        for key in MTS.keys():
-                            min_dist = 10000000
-                            for pt in points:
-                                hypot = get_hypot(pt, MTS[key]['lat'], MTS[key]['lon'])
-                                if hypot < min_dist:
-                                    min_dist = hypot
-                            if min_dist <= 0.000833:
-                                # add id to list of activities that have touched this mountain
-                                MTS[key]['act_id'].append(item['id'])
-                                # map the peaks summited on this activity to the activity
-                                MTS[key]['act_name'].append(item['name'])
-                                with open("runs.csv", "a") as runs_file:
-                                    writer = csv.writer(runs_file, delimiter=",")
-                                    writer.writerow([item["id"], item['map']['summary_polyline']])
+        MTS = parse(page, MTS)
 
     unfin = []
     finished = {}
@@ -215,6 +229,7 @@ def get_username(access_token):
     end_time = time.time()
     delta = end_time - start
     print('delta time', delta, unfin, finished)
+    print('run/bike/swim total = ', act_total)
     return finished, unfin
 
 
