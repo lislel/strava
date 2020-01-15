@@ -11,6 +11,9 @@ import math
 import json
 import yaml
 import time
+from multiprocessing.pool import ThreadPool
+import random
+import time
 
 CLIENT_ID = 28599  # Fill this in with your client ID
 CLIENT_SECRET = '0b89acaaafd09735ed93707d135ebf3519bfbfd7'  # Fill this in with your client secret
@@ -154,6 +157,7 @@ def get_hypot(pt, lat, lon):
     return hypot
 
 
+'''
 def get_jobs(headers):
     url = "https://www.strava.com/api/v3/activities"
     first_page = s.get(url, headers=headers).json()
@@ -167,6 +171,16 @@ def get_jobs(headers):
             yield next_page
         except:
             pass
+'''
+
+def get_jobs(page, headers, mts):
+    time.sleep(random.random())
+    url = "https://www.strava.com/api/v3/activities"
+    next_page = s.get(url, headers=headers, params={'page': page, 'per_page': 200}).json()
+    results = parse(next_page, mts)
+    print('results for page ', page, '=', results)
+    return results
+
 
 def get_athelete(headers, id):
     url = "https://www.strava.com/api/v3/athletes/%s/stats" % id
@@ -212,9 +226,27 @@ def get_username(access_token, MTS):
         writer = csv.writer(runs_file, delimiter=",")
         writer.writerow(["id", "polyline"])
 
+    # Get page params
+    page_param = []
+    mtn_results = []
+    for i in range(1, page_num+ 1):
+        page_param.append([i, headers, MTS])
+
+    p = ThreadPool(processes=page_num)
+    MTS = p.starmap(get_jobs, page_param)
+    p.close()
+    p.join()
+    p.terminate()
+    end_time = time.time()
+    delta = end_time - start
+    print('delta time', delta)
+    print(MTS, type(MTS))
+
+    '''
     for page in get_jobs(headers):
         print('test', page, type(page))
         MTS = parse(page, MTS)
+    '''
 
     unfin = []
     finished = {}
@@ -226,9 +258,7 @@ def get_username(access_token, MTS):
             finished[key] = MTS[key]
 
     session['marks'] = MTS
-    end_time = time.time()
-    delta = end_time - start
-    print('delta time', delta, unfin, finished)
+
     print('run/bike/swim total = ', act_total)
     return finished, unfin
 
