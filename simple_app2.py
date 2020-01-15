@@ -233,7 +233,7 @@ def get_username(access_token, MTS):
         page_param.append([i, headers, MTS])
 
     p = ThreadPool(processes=page_num)
-    MTS = p.starmap(get_jobs, page_param)
+    mt_results = p.starmap(get_jobs, page_param)
     p.close()
     p.join()
     p.terminate()
@@ -250,6 +250,7 @@ def get_username(access_token, MTS):
 
     unfin = []
     finished = {}
+    MTS = mt_results[0]
     for key in MTS.keys():
         if len(MTS[key]['act_name']) == 0:
             MTS[key]['act_name'] = 'missing'
