@@ -157,21 +157,23 @@ def get_hypot(pt, lat, lon):
     return hypot
 
 
-'''
-def get_jobs(headers):
-    url = "https://www.strava.com/api/v3/activities"
-    first_page = s.get(url, headers=headers).json()
-    print('first page =', first_page, type(first_page))
-    yield first_page
-    # num_pages = first_page['last_page']
 
-    for page in range(2, 7):
-        try:
-            next_page = s.get(url, headers=headers, params={'page': page, 'per_page': 200}).json()
-            yield next_page
-        except:
-            pass
-'''
+def get_jobs_yield(headers, page):
+    url = "https://www.strava.com/api/v3/activities"
+    page_result = s.get(url, headers=headers, params={'page': page, 'per_page': 200}).json()
+    print('first page =', page_result, type(page_result))
+    if len(page_result) > 0:
+        yield page_result
+
+        while len(page_result) > 0:
+            try:
+                page_result = s.get(url, headers=headers, params={'page': page, 'per_page': 200}).json()
+                print(page_result, page)
+                yield page_result
+                page += 1
+            except:
+                pass
+
 
 def get_jobs(page, headers, mts):
     time.sleep(random.random())
@@ -228,7 +230,6 @@ def get_username(access_token, MTS):
 
     # Get page params
     page_param = []
-    mtn_results = []
     for i in range(1, page_num+ 1):
         page_param.append([i, headers, MTS])
 
@@ -237,20 +238,19 @@ def get_username(access_token, MTS):
     p.close()
     p.join()
     p.terminate()
+
     end_time = time.time()
     delta = end_time - start
     print('delta time', delta)
     print(MTS, type(MTS))
 
-    '''
-    for page in get_jobs(headers):
+    for page in get_jobs_yield(headers, page_num + 1):
         print('test', page, type(page))
-        MTS = parse(page, MTS)
-    '''
+        MTS = parse(page, mt_results[0])
 
     unfin = []
     finished = {}
-    MTS = mt_results[0]
+    #MTS = mt_results[0]
     for key in MTS.keys():
         if len(MTS[key]['act_name']) == 0:
             MTS[key]['act_name'] = 'missing'
