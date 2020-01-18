@@ -98,13 +98,7 @@ def home2():
 
 @app.route('/visualize')
 def my_runs():
-    runs = []
-    with open("runs.csv", "r") as runs_file:
-        reader = csv.DictReader(runs_file)
-
-        for row in reader:
-            runs.append(row["polyline"])
-
+    runs = session.get('poly', None)
     m2 = session.get('marks', None)
     m3 = []
     for key in m2.keys():
@@ -123,9 +117,7 @@ def index():
         # Uh-oh, this request wasn't started by us!
         abort(403)
     code = request.args.get('code')
-    print('code =', code)
     access_token = get_token(code)
-    print('access token', access_token)
     # Note: In most cases, you'll want to store the access token, in, say,
     # a session for use in other parts of your web app.
     # return get_username(access_token)
@@ -146,7 +138,6 @@ def get_token(code):
                              headers=headers,
                              data=post_data)
     token_json = response.json()
-    print('token json', token_json)
     return token_json["access_token"]
 
 
@@ -161,27 +152,24 @@ def get_hypot(pt, lat, lon):
 def get_jobs_yield(headers, page):
     url = "https://www.strava.com/api/v3/activities"
     page_result = s.get(url, headers=headers, params={'page': page, 'per_page': 200}).json()
-    print('first page =', page_result, type(page_result))
     if len(page_result) > 0:
         yield page_result
-
         while len(page_result) > 0:
             try:
                 page_result = s.get(url, headers=headers, params={'page': page, 'per_page': 200}).json()
-                print(page_result, page)
                 yield page_result
                 page += 1
             except:
                 pass
 
 
-def get_jobs(page, headers, mts):
+def get_jobs(page, headers, mts, polylines):
     time.sleep(random.random())
     url = "https://www.strava.com/api/v3/activities"
     next_page = s.get(url, headers=headers, params={'page': page, 'per_page': 200}).json()
-    results = parse(next_page, mts)
+    results, polylines = parse(next_page, mts, polylines)
     print('results for page ', page, '=', results)
-    return results
+    return [results, polylines]
 
 
 def get_athelete(headers, id):
@@ -189,7 +177,7 @@ def get_athelete(headers, id):
     first_page = s.get(url, headers=headers).json()
     return first_page
 
-def parse(page, MTS):
+def parse(page, MTS, polylines):
     for item in page:
         if item['start_latlng'] is not None:
             if item['type'] != 'Bike' and item['start_latlng'][0] >= 43.82 and item['start_latlng'][0] <= 44.62 and \
@@ -208,49 +196,45 @@ def parse(page, MTS):
                             MTS[key]['act_id'].append(item['id'])
                             # map the peaks summited on this activity to the activity
                             MTS[key]['act_name'].append(item['name'])
-                            with open("runs.csv", "a") as runs_file:
-                                writer = csv.writer(runs_file, delimiter=",")
-                                writer.writerow([item["id"], item['map']['summary_polyline']])
-    return(MTS)
+                            polylines.append(item['map']['summary_polyline'])
+
+    return(MTS, polylines)
 
 
 def get_username(access_token, MTS):
-    start = time.time()
     headers = base_headers()
     headers.update({'Authorization': 'Bearer ' + access_token})
+
+    polylines = []
 
     # Get athlete stats
     athlete = get_athelete(headers, '5962891')
     act_total = int(athlete['all_run_totals']['count']) +  int(athlete['all_ride_totals']['count']) + int(athlete['all_swim_totals']['count'])
+    #  Get total number of known pages
     page_num = int(act_total/200)
 
-    with open("runs.csv", "w") as runs_file:
-        writer = csv.writer(runs_file, delimiter=",")
-        writer.writerow(["id", "polyline"])
-
-    # Get page params
+    # Set page params
     page_param = []
     for i in range(1, page_num+ 1):
-        page_param.append([i, headers, MTS])
+        page_param.append([i, headers, MTS, polylines])
 
+    # For known number of pages, create that many jobs for API calls
     p = ThreadPool(processes=page_num)
-    mt_results = p.starmap(get_jobs, page_param)
+    results = p.starmap(get_jobs, page_param)
+    mt_results = results[0]
+    poylines = results[1]
     p.close()
     p.join()
     p.terminate()
 
-    end_time = time.time()
-    delta = end_time - start
-    print('delta time', delta)
-    print(MTS, type(MTS))
-
+    # Get remaining pages of API, calling until an empty page is returned
     for page in get_jobs_yield(headers, page_num + 1):
-        print('test', page, type(page))
-        MTS = parse(page, mt_results[0])
+        MTS, polylines = parse(page, mt_results[0], polylines)
 
+    # Sort finished vs unfinished
     unfin = []
     finished = {}
-    #MTS = mt_results[0]
+
     for key in MTS.keys():
         if len(MTS[key]['act_name']) == 0:
             MTS[key]['act_name'] = 'missing'
@@ -259,8 +243,7 @@ def get_username(access_token, MTS):
             finished[key] = MTS[key]
 
     session['marks'] = MTS
-
-    print('run/bike/swim total = ', act_total)
+    session['poly'] = polylines
     return finished, unfin
 
 
