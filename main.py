@@ -202,6 +202,7 @@ def parse(page, MTS, polylines):
 
 
 def get_username(access_token, MTS):
+    start = time.time()
     headers = base_headers()
     headers.update({'Authorization': 'Bearer ' + access_token})
 
@@ -244,6 +245,9 @@ def get_username(access_token, MTS):
 
     session['marks'] = MTS
     session['poly'] = polylines
+    end = time.time()
+    delta = end - start
+    print('delta = ', delta)
     return finished, unfin
 
 
