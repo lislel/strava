@@ -17,11 +17,15 @@ import time
 
 CLIENT_ID = 28599  # Fill this in with your client ID
 CLIENT_SECRET = '0b89acaaafd09735ed93707d135ebf3519bfbfd7'  # Fill this in with your client secret
-REDIRECT_URI = "http://localhost:65010/reddit_callback"
+#REDIRECT_URI = "http://localhost:8081/reddit_callback"
+
+REDIRECT_URI = "https://boreal-mode-266102.appspot.com/reddit_callback"
+# URI= boreal-mode-266102.appspot.com
+# URI localhost:8081
 # MTS = {"washington": [44.2706, -71.3033, []], "adams": [44.3203, -71.2909, []], "jefferson": [44.3045, -71.3176, []], "monroe": [44.2556, -71.3220, []], 'Madison':[44.32833333,-71.27833333, []],'Lafayette': [44.16055556,-71.64416667, []], 'Lincoln': [44.15972222,-71.65166667, []], 'South Twin': [44.19027778,-71.55888889, []], 'Carter Dome':[43.26694444,-71.17888889,[]]}
 # mts_dict = {'washington': [], 'adams': [], 'monroe': [], 'jefferson': [], 'Madison':[], 'Lafayette':[], 'South Twin': [], 'Lincoln':[], 'Carter Dome':[]}
 
-file = '/home/lauren/Documents/strava/mts.yml'
+file = 'mts.yml'
 s = requests.Session()
 
 with open(file) as f:
@@ -68,9 +72,9 @@ def make_authorization_url():
               "response_type": 'code',
               "redirect_uri": REDIRECT_URI,
               "approval_prompt": "auto",
-              "scope": "activity:read_all"}
+              "scope": "activity:read,profile:read_all"}
     url = "https://www.strava.com/oauth/authorize?" + urllib.parse.urlencode(params)
-
+    print('url =', url)
     return url
 
 
@@ -88,6 +92,7 @@ def is_valid_state(state):
 def results():
     fin = session.get('fin')
     unfin = session.get('unfin')
+    print('fin =', fin)
     return render_template('index.html', dkeys = fin.keys(), nh = fin, unfin = unfin)
 
 
@@ -201,6 +206,14 @@ def parse(page, MTS, polylines):
     return(MTS, polylines)
 
 
+def get_athlete_id(headers):
+    url = "https://www.strava.com/api/v3/athlete"
+    results = s.get(url, headers=headers).json()
+    id = results['id']
+    print('id =', id)
+    return id
+
+
 def get_username(access_token, MTS):
     start = time.time()
     headers = base_headers()
@@ -208,8 +221,12 @@ def get_username(access_token, MTS):
 
     polylines = []
 
+    # Get athlete id
+    athlete_id = get_athlete_id(headers)
+
     # Get athlete stats
-    athlete = get_athelete(headers, '5962891')
+    athlete = get_athelete(headers, athlete_id)
+    print('athlete =', athlete)
     act_total = int(athlete['all_run_totals']['count']) +  int(athlete['all_ride_totals']['count']) + int(athlete['all_swim_totals']['count'])
     #  Get total number of known pages
     page_num = int(act_total/200)
@@ -248,11 +265,15 @@ def get_username(access_token, MTS):
     end = time.time()
     delta = end - start
     print('delta = ', delta)
+    print(session['marks'])
+    print(session['poly'])
+
     return finished, unfin
 
 
 if __name__ == '__main__':
-    app.run(debug=True, port=65010)
+    #port=65010
+    app.run(debug=True, port=8081)
     session.init_app(app)
 
 app.secret_key = 'super secret key'

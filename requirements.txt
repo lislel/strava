@@ -2,4 +2,5 @@ Flask
 uuid
 requests
 polyline
+pyyaml
 google-cloud-datastore==1.10.0
