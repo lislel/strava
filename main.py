@@ -274,7 +274,13 @@ def get_username(access_token, MTS):
     MTS = json.dumps(MTS)
     polylines = json.dumps(polylines)
 
-    db2.sql_edit_insert('''INSERT INTO data (athlete_id, unfin, fin, mts, polylines) VALUES (%s, %s, %s, %s, %s) ''',(athlete_id, unfin, finished, MTS, polylines))
+    #check if athlete exists
+    db_athletes = [r[0] for r in db2.sql_query('''SELECT athlete_id FROM data''')]
+    if athlete_id in db_athletes:
+        db2.sql_edit_insert('''UPDATE data SET unfin = %s, fin = %s, mts = %s, polylines = %s WHERE athlete_id = %s''', (unfin, finished, MTS, polylines, athlete_id)
+)
+    else:
+        db2.sql_edit_insert('''INSERT INTO data (athlete_id, unfin, fin, mts, polylines) VALUES (%s, %s, %s, %s, %s) ''',(athlete_id, unfin, finished, MTS, polylines))
     db2.conn.commit()
 
 
