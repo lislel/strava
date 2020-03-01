@@ -1,25 +1,28 @@
 # !/usr/bin/env python
-from flask import Flask, abort, request, render_template, redirect, session
+from flask import Flask, abort, request, render_template, session
 from uuid import uuid4
 import requests
 import requests.auth
 import urllib
-import csv
 import polyline
 import os
 import math
 import json
 import yaml
-import time
 from multiprocessing.pool import ThreadPool
 import random
 import time
+import lib.db2 as db2
+
+app = Flask(__name__)
+app.secret_key = 'blah'
+
 
 CLIENT_ID = 28599  # Fill this in with your client ID
 CLIENT_SECRET = '0b89acaaafd09735ed93707d135ebf3519bfbfd7'  # Fill this in with your client secret
-#REDIRECT_URI = "http://localhost:8081/reddit_callback"
+REDIRECT_URI = "http://localhost:8081/reddit_callback"
 
-REDIRECT_URI = "https://boreal-mode-266102.appspot.com/reddit_callback"
+#REDIRECT_URI = "https://boreal-mode-266102.appspot.com/reddit_callback"
 # URI= boreal-mode-266102.appspot.com
 # URI localhost:8081
 # MTS = {"washington": [44.2706, -71.3033, []], "adams": [44.3203, -71.2909, []], "jefferson": [44.3045, -71.3176, []], "monroe": [44.2556, -71.3220, []], 'Madison':[44.32833333,-71.27833333, []],'Lafayette': [44.16055556,-71.64416667, []], 'Lincoln': [44.15972222,-71.65166667, []], 'South Twin': [44.19027778,-71.55888889, []], 'Carter Dome':[43.26694444,-71.17888889,[]]}
@@ -49,11 +52,6 @@ def user_agent():
 
 def base_headers():
     return {"User-Agent": user_agent()}
-
-
-app = Flask(__name__)
-app.secret_key = 'blah'
-
 
 @app.route('/')
 def authorize():
@@ -90,9 +88,12 @@ def is_valid_state(state):
 
 @app.route('/results')
 def results():
-    fin = session.get('fin')
-    unfin = session.get('unfin')
-    print('fin =', fin)
+    user_id = str(session.get('user_id'))
+    results = db2.sql_query2(''' SELECT * FROM data where athlete_id= %s''', (user_id,))
+    fin = json.loads(results[0][2])
+    print('fin', fin, type(fin))
+    unfin = json.loads(results[0][1])
+    print('unfin', unfin, type(unfin))
     return render_template('index.html', dkeys = fin.keys(), nh = fin, unfin = unfin)
 
 
@@ -103,17 +104,27 @@ def home2():
 
 @app.route('/visualize')
 def my_runs():
-    runs = session.get('poly', None)
-    m2 = session.get('marks', None)
+    id = str(session.get('user_id'))
+    results = db2.sql_query2(''' SELECT * FROM data where athlete_id= %s''', (id,))
+    for r in results[0]:
+        print(r)
+        print('\n')
+    runs = json.loads(results[0][4])
+    m2= json.loads(results[0][3])
+    print('runs', runs)
+    print('m2', m2)
+    for row in results:
+        for item in row:
+            print('!!!!', item)
     m3 = []
     for key in m2.keys():
         m3.append(m2[key])
-
     return render_template("leaflet.html", runs=json.dumps(runs), map_markers=m3)
 
 
 @app.route('/reddit_callback')
 def index():
+
     error = request.args.get('error', '')
     if error:
         return "Error: " + error
@@ -126,9 +137,9 @@ def index():
     # Note: In most cases, you'll want to store the access token, in, say,
     # a session for use in other parts of your web app.
     # return get_username(access_token)
-    fin, unfin = get_username(access_token, MTS)
-    session['fin'] = fin
-    session['unfin'] = unfin
+    user_id = session.get('user_id')
+    get_username(access_token, MTS)
+
     return render_template('home2.html')
 
 
@@ -173,7 +184,6 @@ def get_jobs(page, headers, mts, polylines):
     url = "https://www.strava.com/api/v3/activities"
     next_page = s.get(url, headers=headers, params={'page': page, 'per_page': 200}).json()
     results, polylines = parse(next_page, mts, polylines)
-    print('results for page ', page, '=', results)
     return [results, polylines]
 
 
@@ -215,18 +225,15 @@ def get_athlete_id(headers):
 
 
 def get_username(access_token, MTS):
-    start = time.time()
     headers = base_headers()
     headers.update({'Authorization': 'Bearer ' + access_token})
 
     polylines = []
-
-    # Get athlete id
     athlete_id = get_athlete_id(headers)
+    session['user_id'] = athlete_id
 
     # Get athlete stats
     athlete = get_athelete(headers, athlete_id)
-    print('athlete =', athlete)
     act_total = int(athlete['all_run_totals']['count']) +  int(athlete['all_ride_totals']['count']) + int(athlete['all_swim_totals']['count'])
     #  Get total number of known pages
     page_num = int(act_total/200)
@@ -260,15 +267,17 @@ def get_username(access_token, MTS):
         else:
             finished[key] = MTS[key]
 
-    session['marks'] = MTS
-    session['poly'] = polylines
-    end = time.time()
-    delta = end - start
-    print('delta = ', delta)
-    print(session['marks'])
-    print(session['poly'])
 
-    return finished, unfin
+    athlete_id = str(athlete_id)
+    unfin = json.dumps(unfin)
+    finished = json.dumps(finished)
+    MTS = json.dumps(MTS)
+    polylines = json.dumps(polylines)
+
+    db2.sql_edit_insert('''INSERT INTO data (athlete_id, unfin, fin, mts, polylines) VALUES (%s, %s, %s, %s, %s) ''',(athlete_id, unfin, finished, MTS, polylines))
+    db2.conn.commit()
+
+
 
 
 if __name__ == '__main__':
