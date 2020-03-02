@@ -7,6 +7,5 @@ google-cloud-datastore==1.10.0
 flask-migrate
 flask-sqlalchemy
 pandas
-sqlite3
-mysql-connector
-mysql-connector-python
+psycopg2
+psycopg2-binary

@@ -20,9 +20,9 @@ app.secret_key = 'blah'
 
 CLIENT_ID = 28599  # Fill this in with your client ID
 CLIENT_SECRET = '0b89acaaafd09735ed93707d135ebf3519bfbfd7'  # Fill this in with your client secret
-REDIRECT_URI = "http://localhost:8081/reddit_callback"
+#REDIRECT_URI = "http://localhost:8081/reddit_callback"
 
-#REDIRECT_URI = "https://boreal-mode-266102.appspot.com/reddit_callback"
+REDIRECT_URI = "https://boreal-mode-266102.appspot.com/reddit_callback"
 # URI= boreal-mode-266102.appspot.com
 # URI localhost:8081
 # MTS = {"washington": [44.2706, -71.3033, []], "adams": [44.3203, -71.2909, []], "jefferson": [44.3045, -71.3176, []], "monroe": [44.2556, -71.3220, []], 'Madison':[44.32833333,-71.27833333, []],'Lafayette': [44.16055556,-71.64416667, []], 'Lincoln': [44.15972222,-71.65166667, []], 'South Twin': [44.19027778,-71.55888889, []], 'Carter Dome':[43.26694444,-71.17888889,[]]}
@@ -280,7 +280,7 @@ def get_username(access_token, MTS):
         db2.sql_edit_insert('''UPDATE data SET unfin = %s, fin = %s, mts = %s, polylines = %s WHERE athlete_id = %s''', (unfin, finished, MTS, polylines, athlete_id)
 )
     else:
-        db2.sql_edit_insert('''INSERT INTO data (athlete_id, unfin, fin, mts, polylines) VALUES (%s, %s, %s, %s, %s) ''',(athlete_id, unfin, finished, MTS, polylines))
+        db2.sql_edit_insert('''INSERT INTO data (athlete_id, unfin, finished, mts, polylines) VALUES (%s, %s, %s, %s, %s) ''',(athlete_id, unfin, finished, MTS, polylines))
     db2.conn.commit()
 
 

@@ -1,13 +1,17 @@
 import os
-import sqlite3
-import pandas as pd
-import json
 import psycopg2
 
-conn = psycopg2.connect(user="lauren",
-                              password="password",
-                              host="localhost",
-                              database="strava_data")
+db_user = os.environ.get("DB_USER")
+db_pass = os.environ.get("DB_PASS")
+db_name = os.environ.get("DB_NAME")
+cloud_sql_connection_name = os.environ.get("CLOUD_SQL_CONNECTION_NAME")
+
+conn = psycopg2.connect(database=db_name, user = db_user, password = db_pass, host = "/cloudsql/" + cloud_sql_connection_name)
+curr = conn.cursor()
+curr.execute(
+        "CREATE TABLE IF NOT EXISTS data "
+        "( athlete_id TEXT, unfin TEXT, finished TEXT, MTS TEXT, polylines TEXT, PRIMARY KEY (athlete_id) );"
+    )
 
 # Make a convenience function for running SQL queries
 def sql_query(query):
