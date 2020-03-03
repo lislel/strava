@@ -63,6 +63,9 @@
         if (m['act_name'] != 'missing') {
 
         var mydiv = document.createElement("myDiv");
+        var aTag = document.createElement('a');
+        aTag.innerText = m['mt_name'] + "\n";
+        mydiv.appendChild(aTag);
 
         for (var number of m['act_id']) {
         var aTag = document.createElement('a');
@@ -81,7 +84,7 @@
             markerColor: 'red'
             });
 
-        L.marker([m['lat'], m['lon']], {icon: redMarker}).addTo(map).bindPopup("Not climbed yet!");
+        L.marker([m['lat'], m['lon']], {icon: redMarker}).addTo(map).bindPopup(m['mt_name']);
         }
     }
 

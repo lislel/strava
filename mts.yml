@@ -1,20 +1,24 @@
 washington:
+  mt_name: Washington
   lat: 44.2706
   lon: -71.3033
   act_name: []
   act_id: []
 adams:
+  mt_name: Adams
   lat: 44.3202
   lon: -71.2909
   act_name: []
   act_id: []
 jefferson:
+  mt_name: Jefferson
   lat: 44.3045
   lon: -71.3176
   act_name: []
   act_id: []
-test_miss:
-  lat: 47.3045
-  lon: -71.3176
+cabot:
+  mt_name: Cabot
+  lat: 44.5602
+  lon: -71.4156
   act_name: []
   act_id: []
