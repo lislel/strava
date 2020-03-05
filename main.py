@@ -204,9 +204,13 @@ def parse(page, MTS, polylines):
                         min_dist = 10000000
                         for pt in points:
                             hypot = get_hypot(pt, MTS[key]['lat'], MTS[key]['lon'])
+                            if item['id'] == 724479534 or item['id'] == str(724479534):
+                                if key == 'madison':
+                                    print(key, hypot)
                             if hypot < min_dist:
                                 min_dist = hypot
-                        if min_dist <= 0.000833:
+                        #if min_dist <= 0.00085:
+                        if min_dist <= 0.0085:
                             # add id to list of activities that have touched this mountain
                             MTS[key]['act_id'].append(item['id'])
                             # map the peaks summited on this activity to the activity
@@ -274,11 +278,6 @@ def get_username(access_token, MTS):
     MTS = json.dumps(MTS)
     polylines = json.dumps(polylines)
 
-    print('before athlete id', athlete_id)
-    print('before unfin', unfin)
-    print('before finsihed', finished)
-    print('before mts', MTS)
-    print('before polylines', polylines)
 
     #check if athlete exists
     db_athletes = [r[0] for r in db2.sql_query('''SELECT athlete_id FROM data''')]
