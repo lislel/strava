@@ -17,7 +17,6 @@ import lib.db2 as db2
 app = Flask(__name__)
 app.secret_key = 'blah'
 
-
 CLIENT_ID = 28599  # Fill this in with your client ID
 CLIENT_SECRET = '0b89acaaafd09735ed93707d135ebf3519bfbfd7'  # Fill this in with your client secret
 #REDIRECT_URI = "http://localhost:8081/reddit_callback"
@@ -28,12 +27,8 @@ REDIRECT_URI = "https://boreal-mode-266102.appspot.com/reddit_callback"
 # MTS = {"washington": [44.2706, -71.3033, []], "adams": [44.3203, -71.2909, []], "jefferson": [44.3045, -71.3176, []], "monroe": [44.2556, -71.3220, []], 'Madison':[44.32833333,-71.27833333, []],'Lafayette': [44.16055556,-71.64416667, []], 'Lincoln': [44.15972222,-71.65166667, []], 'South Twin': [44.19027778,-71.55888889, []], 'Carter Dome':[43.26694444,-71.17888889,[]]}
 # mts_dict = {'washington': [], 'adams': [], 'monroe': [], 'jefferson': [], 'Madison':[], 'Lafayette':[], 'South Twin': [], 'Lincoln':[], 'Carter Dome':[]}
 
-file = 'mts.yml'
-s = requests.Session()
 
-with open(file) as f:
-    MTS = yaml.load(f)
-    print(MTS)
+s = requests.Session()
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
@@ -55,6 +50,8 @@ def base_headers():
 
 @app.route('/')
 def authorize():
+    session.clear()
+    print('cleared session')
     # text = '<a href="%s">Authenticate with strava</a>'
     # return text % make_authorization_url()
     x = make_authorization_url()
@@ -72,7 +69,6 @@ def make_authorization_url():
               "approval_prompt": "auto",
               "scope": "activity:read,profile:read_all"}
     url = "https://www.strava.com/oauth/authorize?" + urllib.parse.urlencode(params)
-    print('url =', url)
     return url
 
 
@@ -88,12 +84,15 @@ def is_valid_state(state):
 
 @app.route('/results')
 def results():
+    fin = {}
+    unfin = {}
+    results = ''
     user_id = str(session.get('user_id'))
     results = db2.sql_query2(''' SELECT * FROM data where athlete_id= %s''', (user_id,))
     fin = json.loads(results[0][2])
-    print('fin', fin, type(fin))
     unfin = json.loads(results[0][1])
-    print('unfin', unfin, type(unfin))
+    print('fin =', fin)
+    print('unfin =', unfin)
     return render_template('index.html', dkeys = fin.keys(), nh = fin, unfin = unfin)
 
 
@@ -104,18 +103,13 @@ def home2():
 
 @app.route('/visualize')
 def my_runs():
-    id = str(session.get('user_id'))
-    results = db2.sql_query2(''' SELECT * FROM data where athlete_id= %s''', (id,))
-    for r in results[0]:
-        print(r)
-        print('\n')
+    m2 = {}
+    results = ''
+    runs = {}
+    user_id = str(session.get('user_id'))
+    results = db2.sql_query2(''' SELECT * FROM data where athlete_id= %s''', (user_id,))
     runs = json.loads(results[0][4])
     m2= json.loads(results[0][3])
-    print('runs', runs)
-    print('m2', m2)
-    for row in results:
-        for item in row:
-            print('!!!!', item)
     m3 = []
     for key in m2.keys():
         m3.append(m2[key])
@@ -137,8 +131,7 @@ def index():
     # Note: In most cases, you'll want to store the access token, in, say,
     # a session for use in other parts of your web app.
     # return get_username(access_token)
-    user_id = session.get('user_id')
-    get_username(access_token, MTS)
+    get_username(access_token)
 
     return render_template('home2.html')
 
@@ -197,16 +190,13 @@ def parse(page, MTS, polylines):
         if item['start_latlng'] is not None:
             if item['type'] != 'Bike' and item['start_latlng'][0] >= 43.82 and item['start_latlng'][0] <= 44.62 and \
                     item['start_latlng'][1] >= -71.97 and item['start_latlng'][1] <= -71.012:
-                if item['elev_high'] > 1219:
+                if item['elev_high'] > 1210:
                     line = item['map']['summary_polyline']
                     points = polyline.decode(line)
                     for key in MTS.keys():
                         min_dist = 10000000
                         for pt in points:
                             hypot = get_hypot(pt, MTS[key]['lat'], MTS[key]['lon'])
-                            if item['id'] == 724479534 or item['id'] == str(724479534):
-                                if key == 'madison':
-                                    print(key, hypot)
                             if hypot < min_dist:
                                 min_dist = hypot
                         #if min_dist <= 0.00085:
@@ -224,11 +214,14 @@ def get_athlete_id(headers):
     url = "https://www.strava.com/api/v3/athlete"
     results = s.get(url, headers=headers).json()
     id = results['id']
-    print('id =', id)
     return id
 
 
-def get_username(access_token, MTS):
+def get_username(access_token):
+    file = 'mts.yml'
+    with open(file) as f:
+        MTS = yaml.load(f)
+
     headers = base_headers()
     headers.update({'Authorization': 'Bearer ' + access_token})
 
@@ -278,16 +271,18 @@ def get_username(access_token, MTS):
     MTS = json.dumps(MTS)
     polylines = json.dumps(polylines)
 
+    print('unfin =', unfin)
+    print('finished =', finished)
 
     #check if athlete exists
     db_athletes = [r[0] for r in db2.sql_query('''SELECT athlete_id FROM data''')]
     if athlete_id in db_athletes:
-        db2.sql_delete('''DELETE FROM data WHERE athlete_id = %s''', (athlete_id,)
-                       )
-
-    db2.sql_edit_insert('''INSERT INTO data (athlete_id, unfin, finished, mts, polylines) VALUES (%s, %s, %s, %s, %s) ''',(athlete_id, unfin, finished, MTS, polylines))
-
-
+        db2.sql_edit_insert('''UPDATE data SET unfin = %s, finished = %s, mts = %s, polylines = %s WHERE athlete_id = %s''', (unfin, finished, MTS, polylines, athlete_id,))
+        #result = db2.sql_query2('''SELECT * FROM data WHERE athlete_id = %s''', athlete_id)
+        #for r in result:
+        #    print('query result', r)
+    else:
+        db2.sql_edit_insert('''INSERT INTO data athlete_id, unfin, finished, mts, polylines VALUES %s, %s, %s, %s, %s''',(athlete_id, unfin, finished, MTS, polylines,))
 
 
 if __name__ == '__main__':

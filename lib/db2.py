@@ -41,12 +41,11 @@ def sql_edit_insert(query,var):
     with getcursor() as cur:
         cur.execute(query,var)
 
-
 def sql_delete(query,var):
     with getcursor() as cur:
         cur.execute(query,var)
 
-def sql_query2(query,var):
+def sql_query2(query, var):
     with getcursor() as cur:
         cur.execute(query,var)
         rows = cur.fetchall()
